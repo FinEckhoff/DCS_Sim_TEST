@@ -11,3 +11,8 @@
 *.hex
 *.elf
 *.asm
+
+Lib/
+Scripts/
+__pycache__/
+pyvenv.cfg

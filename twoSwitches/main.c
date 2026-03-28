@@ -1,7 +1,8 @@
 #define F_CPU 8000000UL
 #include <avr/io.h>
 #include <util/delay.h>
-#define BIT_US 104000
+#define READ_BIT_US 500
+#define WRITE_BIT_US 104
 #include <avr/interrupt.h>
 
 volatile uint8_t triggered = 0;
@@ -27,7 +28,7 @@ static uint8_t read_byte(void)
            
 
 
-    _delay_us(1.5*BIT_US);
+    _delay_us(1.5*READ_BIT_US);
     // Move to middle of first data bit
     //_delay_us(BIT_US + (BIT_US / 2));
 
@@ -41,11 +42,11 @@ static uint8_t read_byte(void)
     
         
 
-    _delay_us(BIT_US);
+    _delay_us(READ_BIT_US);
     }
 
     // Optional: sample/skip stop bit
-    _delay_us(BIT_US);
+    _delay_us(READ_BIT_US);
 
     return data;
 }
@@ -54,7 +55,7 @@ void send_byte(uint8_t data)
 {
     // start bit (LOW)
     PORTB &= ~(1 << PB2);
-    _delay_us(BIT_US);
+    _delay_us(WRITE_BIT_US);
 
     // 8 data bits (LSB first)
     for (uint8_t i = 0; i < 8; i++)
@@ -64,13 +65,13 @@ void send_byte(uint8_t data)
         else
             PORTB &= ~(1 << PB2);
 
-        _delay_us(BIT_US);
+        _delay_us(WRITE_BIT_US);
         data >>= 1;
     }
 
     // stop bit (HIGH)
     PORTB |= (1 << PB2);
-    _delay_us(BIT_US);
+    _delay_us(WRITE_BIT_US);
 }
 
 

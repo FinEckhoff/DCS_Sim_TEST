@@ -1,7 +1,7 @@
 #define F_CPU 8000000UL
 #include <avr/io.h>
 #include <util/delay.h>
-#define BIT_US 104000
+#define BIT_US 500
 #define SR_CLK  PB2
 #define SR_LOAD PB1
 
@@ -53,6 +53,6 @@ int main(void)
     {
         volatile uint8_t value = read();
        
-        _delay_us(8*BIT_US);
+        _delay_us(16*BIT_US);
     }
 }

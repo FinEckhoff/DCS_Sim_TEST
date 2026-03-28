@@ -4,6 +4,8 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 CFLAGS = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os
 
+
+
 TARGET = main
 
 all: $(TARGET).hex
