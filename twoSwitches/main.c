@@ -4,10 +4,10 @@
 #define READ_BIT_US 500
 #define WRITE_BIT_US 104
 #include <avr/interrupt.h>
-
+#define BYTESTOSEND 1
 volatile uint8_t triggered = 0;
 uint8_t val = 0;
-
+uint8_t valueChanged = 0;
 ISR(PCINT0_vect)
 {
     // check if PB3 is HIGH (rising edge detection)
@@ -51,6 +51,8 @@ static uint8_t read_byte(void)
     return data;
 }
 
+
+
 void send_byte(uint8_t data)
 {
     // start bit (LOW)
@@ -75,6 +77,10 @@ void send_byte(uint8_t data)
 }
 
 
+void send_init(){
+    send_byte(BYTESTOSEND);
+    _delay_us(WRITE_BIT_US);
+}
 
 
 
@@ -96,9 +102,14 @@ int main(void)
     PCMSK |=(1<<PCINT3);
     while (1)
     {
+        uint8_t newval = read_byte();
+        if(newval != val){
+            val = newval;
+            valueChanged = 1;
+        }
         
-        val = read_byte();
         if(triggered){
+            send_init();
             send_byte(val);
             triggered=0;
         }

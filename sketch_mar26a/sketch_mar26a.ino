@@ -2,7 +2,7 @@
 /*
  * Incoming data format (8 bits total):
  *
- *   1ABC DEFG
+ *   ABCD EFGH
  *
  */
 
@@ -12,8 +12,8 @@
 
 typedef struct {
   const char* command;
-  uint8_t lsb;     // lowest bit position
-  uint8_t width;   // number of bits
+  uint8_t lsb;    // lowest bit position
+  uint8_t width;  // number of bits
 } FieldDef;
 
 
@@ -26,22 +26,21 @@ typedef struct {
 
 
 const FieldDef fields_air_con1[] = {
-  { "PLT_TEMP_AUTO_MAN",    6, 1 },  // A
-  { "PLT_CABIN_PRESS_DUMP", 5, 1 },  // B
-  { "PLT_RAM_AIR",          4, 1 },  // C
-  { "PLT_TEMP",             0, 4 }   // DEFG
+  { "PLT_TEMP_AUTO_MAN", 7, 1 },     // A
+  { "PLT_CABIN_PRESS_DUMP", 6, 1 },  // B
+  { "PLT_RAM_AIR", 5, 1 },           // C
+  { "PLT_TEMP", 1, 4 }               // DEFG
 };
 
 
 const MapEntry lookupTable[] = {
-  { 0x01, fields_air_con1,   sizeof(fields_air_con1) / sizeof(fields_air_con1[0]) }
+  { 0x01, fields_air_con1, sizeof(fields_air_con1) / sizeof(fields_air_con1[0]) }
 };
 
 
 static uint8_t extractBits(uint8_t value, uint8_t lsb, uint8_t width) {
-    uint8_t mask = (1u << width) - 1u;
+  uint8_t mask = (1u << width) - 1u;
   return (value >> lsb) & mask;
-  
 }
 
 const MapEntry* lookupEntry(uint8_t address) {
@@ -81,7 +80,7 @@ static uint8_t read_byte(void) {
 
 
 
-  _delay_us(2.25 * BIT_US);
+  _delay_us(1.5 * BIT_US);
   // Move to middle of first data bit
   //_delay_us(BIT_US + (BIT_US / 2));
 
@@ -118,23 +117,27 @@ void loop() {
 
 
 
-    PORTD &= ~(1 << 6);  //pin6
+    PORTD &= ~(1 << 6);  //pin6 //send addr
     _delay_us(20 * BIT_US);
     PORTD |= (1 << 6);
 
-    uint8_t val = read_byte();
+    uint8_t numOfBytes = read_byte();
+    for (uint8_t bytenr = 0; bytenr < numOfBytes; bytenr++) {
+      uint8_t val = read_byte();
+      const MapEntry* e = lookupEntry(0x01);
 
-
-
-    const MapEntry* e = lookupEntry(0x01);
-
-    if (addr == 1) {
+      if (addr == 1) {
         Serial.print("VAL");
-    Serial.print(" ");
-    Serial.println(val);
-      decodeAndPrint(addr, val);
+        Serial.print(" ");
+        Serial.println(val);
+        decodeAndPrint(addr, val);
+        delay(1000);
+      }
     }
   }
+
+
+
+
   //_delay_us(10*BIT_US);
-  //delay(500);
 }
