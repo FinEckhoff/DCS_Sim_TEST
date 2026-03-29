@@ -7,6 +7,7 @@ LINE_WIDTH = 40
 ser = serial.Serial(PORT, BAUD, timeout=1)
 
 lines = {
+    "addr":"addr ?",
     "VAL":"VAL ?",
     "PLT_TEMP_AUTO_MAN": "PLT_TEMP_AUTO_MAN ?",
     "PLT_CABIN_PRESS_DUMP": "PLT_CABIN_PRESS_DUMP ?",

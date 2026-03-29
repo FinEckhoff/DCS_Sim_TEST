@@ -78,8 +78,13 @@ void send_byte(uint8_t data)
 
 
 void send_init(){
-    send_byte(BYTESTOSEND);
-    _delay_us(WRITE_BIT_US);
+    if(valueChanged){
+        send_byte(BYTESTOSEND);
+        _delay_us(WRITE_BIT_US);
+    }else{
+        send_byte(0x0);
+    }
+  
 }
 
 
@@ -105,13 +110,17 @@ int main(void)
         uint8_t newval = read_byte();
         if(newval != val){
             val = newval;
-            valueChanged = 1;
+            valueChanged = 200;
         }
         
         if(triggered){
             send_init();
-            send_byte(val);
+            if(valueChanged){
+                send_byte(val);
+                valueChanged--;
+            }
             triggered=0;
+            
         }
 
         

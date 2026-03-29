@@ -9,7 +9,7 @@
 
 #define BIT_US 104
 #define BIT_A 6
-
+#define RESPONSE_TIMEOUT_US BIT_US*500
 typedef struct {
   const char* command;
   uint8_t lsb;    // lowest bit position
@@ -70,36 +70,44 @@ static void decodeAndPrint(uint8_t address, uint8_t val) {
 
 
 
-
-
-static uint8_t read_byte(void) {
+static uint8_t read_byte_timeout(uint8_t* out, uint32_t timeout_us) {
   uint8_t data = 0;
+  uint32_t start = micros();
 
   // Wait for start bit: line goes LOW
-  while (PIND & (1 << PD7)) {}
+  while (PIND & (1 << PD7)) {
+    if ((uint32_t)(micros() - start) >= timeout_us) {
+      return 0;   // timed out waiting for start bit
+    }
+  }
 
+  // Verify it is still low in the middle of the start bit
+  _delay_us(BIT_US / 2);
+  if (PIND & (1 << PD7)) {
+    return 0;   // glitch, not a real start bit
+  }
 
-
-  _delay_us(1.5 * BIT_US);
   // Move to middle of first data bit
-  //_delay_us(BIT_US + (BIT_US / 2));
+  _delay_us(BIT_US);
 
   // Read 8 data bits, LSB first
   for (uint8_t i = 0; i < 8; i++) {
     if (PIND & (1 << PD7)) {
-
       data |= (1 << i);
     }
-
-
     _delay_us(BIT_US);
   }
 
-  // Optional: sample/skip stop bit
-  _delay_us(BIT_US);
+  // Stop bit should be HIGH
+  if (!(PIND & (1 << PD7))) {
+    return 0;   // framing error
+  }
 
-  return data;
+  *out = data;
+  return 1;
 }
+
+
 
 
 
@@ -121,17 +129,36 @@ void loop() {
     _delay_us(20 * BIT_US);
     PORTD |= (1 << 6);
 
-    uint8_t numOfBytes = read_byte();
-    for (uint8_t bytenr = 0; bytenr < numOfBytes; bytenr++) {
-      uint8_t val = read_byte();
-      const MapEntry* e = lookupEntry(0x01);
+    Serial.print("addr ");
+    Serial.println(addr);
+    uint8_t numOfBytes;
+    if (!read_byte_timeout(&numOfBytes, RESPONSE_TIMEOUT_US)) {
+      Serial.println("timeout waiting for byte count");
+      continue;   // skip this address
+    }
+    if (numOfBytes > 16) {
+      Serial.print("invalid byte count ");
+      Serial.println(numOfBytes);
+      continue;
+    }
 
+    for (uint8_t bytenr = 0; bytenr < numOfBytes; bytenr++) {
+      uint8_t val;
+      if (!read_byte_timeout(&val, RESPONSE_TIMEOUT_US)) {
+        Serial.print("timeout at addr ");
+        Serial.print(addr); 
+        Serial.print(" byte ");
+        Serial.println(bytenr);
+        break;   // abort this slave, continue with next address
+      }
+
+      
       if (addr == 1) {
         Serial.print("VAL");
         Serial.print(" ");
         Serial.println(val);
         decodeAndPrint(addr, val);
-        delay(1000);
+        //delay(1000);
       }
     }
   }
